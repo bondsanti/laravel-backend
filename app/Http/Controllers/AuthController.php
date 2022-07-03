@@ -3,9 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\User; //conect database Eloquent
-use Illuminate\Http\Request;
-//use App\Http\Requests\UserRegisterRequest;
+
+
 use App\Http\Resources\User as UserResources;
+use App\Http\Requests\UserRegisterRequest;
+use App\Http\Requests\UserLoginRequest;
+use Illuminate\Http\Request;
+
+
 
 class AuthController extends Controller
 {
@@ -18,7 +23,7 @@ class AuthController extends Controller
         ],
         [
             'email.email'=>"รูปแบบอีเมล์ไม่ถูกต้อง",
-            'email.required'=>"required",
+            'email.required'=>"กรุณาป้อนอีเมล์",
             'email.unique'=>"มีอีเมล์นี้ในระบบแล้ว",
             'name.required'=>"กรุณาป้อนชื่อ",
             'password.required'=>"กรุณาป้อนรหัสผ่าน",
@@ -37,8 +42,42 @@ class AuthController extends Controller
 
         return (new UserResources($request->user()))->additional([
             'meta'=>[
-                'token' => $token
+                'token' => $token,
+                'token_type' => 'bearer',
             ]
         ]);
+    }
+    public function login(UserLoginRequest $request){
+        $this->validate($request,[
+            'email' => 'email|required',
+            'password' => 'required|min:6'
+        ],
+        [
+            'email.email'=>"รูปแบบอีเมล์ไม่ถูกต้อง",
+            'email.required'=>"กรุณาป้อนอีเมล์",
+            'password.required'=>"กรุณาป้อนรหัสผ่าน",
+            'password.min'=>"รหัสผ่านต้องมากกว่า 6 ตัวอักษร"
+        ]);
+
+        if(!$token = auth()->attempt($request->only(['email', 'password']))){
+            return response()->json([
+                'errors' =>[
+                    'email' => 'ไม่พบอีเมล์นี้ในระบบ'
+                ]
+                ],422);
+        }
+
+        return (new UserResources($request->user()))->additional([
+            'meta'=>[
+                'token' => $token,
+                'token_type' => 'bearer'
+            ]
+        ]);
+    }
+    public function profile(Request $request){
+        //dd('ddd');
+     //return new UserResources($request->user());
+     return response()->json(auth()->user());
+
     }
 }

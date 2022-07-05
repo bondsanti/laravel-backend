@@ -59,25 +59,49 @@ class AuthController extends Controller
             'password.min'=>"รหัสผ่านต้องมากกว่า 6 ตัวอักษร"
         ]);
 
-        if(!$token = auth()->attempt($request->only(['email', 'password']))){
-            return response()->json([
-                'errors' =>[
-                    'email' => 'ไม่พบอีเมล์นี้ในระบบ'
-                ]
-                ],422);
+        $credentials = request(['email', 'password']);
+
+        if (! $token = auth()->attempt($credentials)) {
+            return response()->json(['errors' =>['email' =>'ไม่พบอีเมล์นี้ในระบบ'] ], 401);
         }
 
-        return (new UserResources($request->user()))->additional([
-            'meta'=>[
-                'token' => $token,
-                'token_type' => 'bearer'
-            ]
-        ]);
+        return $this->respondWithToken($token);
+
+        // if(!$token = auth()->attempt($request->only(['email', 'password']))){
+        //     return response()->json([
+        //         'errors' =>[
+        //             'email' => 'ไม่พบอีเมล์นี้ในระบบ'
+        //         ]
+        //         ],422);
+        // }
+
+        // return (new UserResources($request->user()))->additional([
+        //     'meta'=>[
+        //         'token' => $token,
+        //         'token_type' => 'bearer'
+        //     ]
+        // ]);
     }
     public function profile(Request $request){
         //dd('ddd');
      //return new UserResources($request->user());
      return response()->json(auth()->user());
 
+    }
+
+    public function logout()
+    {
+        auth()->logout();
+
+        return response()->json(['message' => 'Successfully logged out']);
+    }
+
+    protected function respondWithToken($token)
+    {
+        return response()->json([
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => auth()->factory()->getTTL() * 60
+        ]);
     }
 }
